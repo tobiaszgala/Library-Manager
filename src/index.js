@@ -5,12 +5,10 @@ const sequelize = require('./models').sequelize;
 // routes
 const mainRoute = require('./routes/main');
 const booksRoute = require('./routes/books');
-const errorMiddleware = require('./middlewares/error');
 
 // directory settings
 const publicDirectory = path.join(__dirname, '../public');
 const viewDirectory = path.join(__dirname, './templates');
-
 
 // express
 const app = express();
@@ -26,12 +24,22 @@ app.use('/static', express.static(publicDirectory));
 app.use(mainRoute);
 app.use(booksRoute);
 
-// error handling middlewares
-app.use(errorMiddleware.notFound);
-app.use(errorMiddleware.errorHandler);
+// not found route
+app.use('*', (req, res) => {
+	res.render('page-not-found');
+});
 
-sequelize.sync().then(() => { 
-    app.listen(port, () => {
-        console.log(`Server is running on port: ${port}`);
-    });
+// error handling route for any thrown error
+app.use((err, req, res, next) => {
+	err.status = err.status || 500;
+	err.message = err.message || 'Sorry, there was an error!';
+	res.locals.error = err;
+	res.status(err.status);
+	res.render('error');
+});
+
+sequelize.sync().then(() => {
+	app.listen(port, () => {
+		console.log(`Server is running on port: ${port}`);
+	});
 });
